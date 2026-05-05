@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+.idea/
+.vscode/
+.pytest_cache/
+pytest-cache-files-*/
+logs/run_history.json
+logs/plots/*.png
+generated_rewards/*.tmp
+flask_out.log
+flask_err.log
