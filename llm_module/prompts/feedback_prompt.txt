@@ -1,0 +1,27 @@
+The previous reward function was evaluated in the same 2D Gridworld environment.
+
+Environment:
+{maze}
+
+Task:
+{instruction}
+
+Previous reward code:
+{previous_code}
+
+Evaluation metrics:
+{metrics}
+
+Please refine the reward function so that:
+1. Success Rate improves toward at least 95%.
+2. Path efficiency improves toward near-shortest-path behavior. Use the provided optimal path length and ARPD target when available.
+3. Hitting lava is strongly penalized.
+4. Hitting walls is penalized.
+5. Moving closer to the goal is rewarded.
+6. Add a mild per-step penalty to discourage unnecessary detours and loops.
+7. The function remains simple, deterministic, and CPU friendly.
+
+Return only valid Python code. It must define:
+
+def calculate_reward(state, action, next_state, info=None):
+    ...

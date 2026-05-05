@@ -1,0 +1,23 @@
+You are reproducing the reward-design loop from "Self-Refined Large Language Model as Automated Reward Function Designer".
+
+Environment:
+{maze}
+
+Task:
+{instruction}
+
+Observable state fields:
+- state["position"], state["distance_to_goal"], state["shortest_path_distance"], state["nearest_lava_distance"]
+- next_state["position"], next_state["distance_to_goal"], next_state["shortest_path_distance"], next_state["nearest_lava_distance"]
+- info["hit_wall"], info["hit_lava"], info["reached_goal"], info["timed_out"]
+
+Return only valid Python code. It must define exactly this function:
+
+def calculate_reward(state, action, next_state, info=None):
+    ...
+
+The function must return a float.
+Design this as an intentionally simple baseline reward, not a perfect solution:
+- Keep only a few terms.
+- Avoid strong hazard shaping in this initial version.
+- It is acceptable if this baseline underperforms and needs refinement.
