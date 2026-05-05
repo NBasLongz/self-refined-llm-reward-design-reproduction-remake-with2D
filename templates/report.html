@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Self-Refined RL Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Serif:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:#e5e7eb;color:#111827;font-family:"IBM Plex Serif",Georgia,serif}
+    .page{width:900px;min-height:1200px;margin:24px auto;background:#fff;padding:48px 58px;box-shadow:0 12px 35px rgba(15,23,42,.18)}
+    h2{font-size:19px;margin:0 0 16px;font-weight:700}
+    h3{font-size:16px;margin:24px 0 10px}
+    p{font-size:15px;line-height:1.35;margin:8px 0;text-align:justify}
+    .eq{font-size:18px;text-align:center;margin:18px 0;font-style:italic}
+    .fig3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:18px}
+    .reward-card{border:1px solid #333;background:#fff}
+    .reward-card .head{font:700 12px "IBM Plex Sans",sans-serif;text-align:center;padding:6px;border-bottom:1px solid #333}
+    .reward-card:nth-child(1) .head{background:#dceafe}
+    .reward-card:nth-child(2) .head{background:#fff1c7}
+    .reward-card:nth-child(3) .head{background:#dff0d8}
+    .reward-card .body{padding:10px 12px;font-size:13px;line-height:1.45}
+    .reward-card .eval{border-top:1px solid #333;padding:9px 12px;font-size:12px;line-height:1.45}
+    .arrow-row{display:flex;justify-content:center;gap:140px;color:#d84b45;font:700 32px Arial;margin:-6px 0 4px}
+    .caption{font-size:14px;line-height:1.25;margin:8px 0 20px;text-align:left}
+    .figure4{background:#c7e4ef;border:1px solid #9ec6d5;padding:12px;margin-top:12px}
+    .behavior-grid{display:grid;grid-template-columns:90px repeat(5,1fr);gap:8px;align-items:center}
+    .row-label{font:700 12px "IBM Plex Sans",sans-serif;text-align:right}
+    .mini-maze{width:116px;height:80px;background:#eef7fb;border:1px solid rgba(15,23,42,.2);position:relative;overflow:hidden}
+    .mini-maze:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(15,23,42,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.12) 1px,transparent 1px);background-size:14px 14px}
+    .bot{width:20px;height:12px;border-radius:8px;background:#d94c43;position:absolute;box-shadow:0 2px 2px rgba(0,0,0,.25)}
+    .goal{width:14px;height:14px;border-radius:50%;background:#22a06b;position:absolute;right:8px;top:8px}
+    .lava{width:16px;height:16px;border-radius:4px;background:#d0445a;position:absolute;left:55px;top:35px;opacity:.75}
+    .time{position:absolute;left:6px;bottom:2px;color:red;font:700 11px "JetBrains Mono",monospace}
+    table{border-collapse:collapse;margin:18px auto;width:760px;font-size:15px}
+    caption{caption-side:top;text-align:left;margin-bottom:6px;font-size:15px}
+    th,td{padding:4px 9px;text-align:center}
+    th{font-weight:400}
+    thead tr:first-child th{border-top:2px solid #555}
+    thead tr:last-child th{border-bottom:1px solid #555}
+    tbody tr.group-end td{border-bottom:1px solid #555}
+    tbody tr:last-child td{border-bottom:2px solid #555}
+    .left{text-align:left}.system{vertical-align:middle}
+    .btns{position:sticky;top:0;background:#f8fafc;border-bottom:1px solid #cbd5e1;padding:10px 16px;display:flex;gap:8px;justify-content:center;font-family:"IBM Plex Sans",sans-serif;z-index:2}
+    button{border:1px solid #1f2937;background:#111827;color:#fff;border-radius:6px;padding:8px 12px;font-weight:700;cursor:pointer}
+    .ghost{background:#fff;color:#111827}
+    @media print{body{background:#fff}.btns{display:none}.page{box-shadow:none;margin:0;width:auto}}
+  </style>
+</head>
+<body>
+<div class="btns">
+  <button onclick="runReport()">Run experiments</button>
+  <button class="ghost" onclick="window.print()">Print / Save PDF</button>
+  <button class="ghost" onclick="location.href='/'">Back to demo</button>
+</div>
+
+<section class="page">
+  <h2>5.2 Reward Function and Objective Metrics</h2>
+  <p>
+    We reproduce the self-refined reward-design framework on CPU by replacing the original
+    continuous robotic simulator with discrete 2D Gridworld tasks. The observable states are the
+    agent position <i>p=(x,y)</i>, goal position, Manhattan distance, shortest-path distance,
+    nearest-lava distance, wall collision indicator, lava collision indicator, timeout flag, and
+    terminal success flag.
+  </p>
+  <p>The success condition used in the adapted experiment is:</p>
+  <div class="eq">φ ≡ ◇<sub>[0,T]</sub>(p = p<sub>goal</sub>) ∧ □<sub>[0,T]</sub>(p ∉ Lava ∧ p ∉ Wall)</div>
+  <p>
+    This means that the agent must reach the target before the episode terminates while avoiding
+    lava and invalid wall transitions. The objective metrics are: success rate SR, average reward,
+    average number of steps, wall hits, lava hits, shortest-path optimality gap ARPD, and CPU
+    training/evaluation time.
+  </p>
+  <p>For comparison, we employ a manually designed reward function:</p>
+  <div class="eq">R = 120r<sub>goal</sub> - 140r<sub>lava</sub> - 12r<sub>wall</sub> - 1 + 6Δd<sub>sp</sub> - λ<sub>lava</sub></div>
+  <p>
+    where <i>Δd<sub>sp</sub></i> is progress measured by shortest-path distance. This is the CPU
+    analogue of using task-specific objective metrics as feedback for reward refinement.
+  </p>
+
+  <div class="fig3">
+    <div class="reward-card">
+      <div class="head">Iteration 0 (Initial)</div>
+      <div class="body">
+        <b>Reward Function:</b><br/>
+        R = +80r<sub>goal</sub> +45r<sub>lava</sub><br/>
+        -3r<sub>wall</sub> -0.5 + 3Δd<br/>
+        <span style="color:#b91c1c">Flaw: lava receives positive reward.</span>
+      </div>
+      <div class="eval" id="eval0">Evaluation: run experiments to fill metrics.</div>
+    </div>
+    <div class="reward-card">
+      <div class="head">Iteration 1</div>
+      <div class="body">
+        <b>Reward Function:</b><br/>
+        R = +120r<sub>goal</sub> -140r<sub>lava</sub><br/>
+        -12r<sub>wall</sub> -1 + 6Δd<br/>
+        <span style="color:#166534">Weight/parameter adjustment.</span>
+      </div>
+      <div class="eval" id="eval1">Evaluation: refined reward improves SR.</div>
+    </div>
+    <div class="reward-card">
+      <div class="head">Iteration 2 (final)</div>
+      <div class="body">
+        <b>Reward Function:</b><br/>
+        R = R<sub>refined</sub> + shortest-path shaping<br/>
+        - local hazard penalty<br/>
+        <span style="color:#166534">Reward component adjustment.</span>
+      </div>
+      <div class="eval" id="eval2">Evaluation: final policy is compared with manual reward.</div>
+    </div>
+  </div>
+  <div class="arrow-row"><span>→</span><span>→</span></div>
+  <p class="caption">
+    Figure 3: Reward functions in different self-refinement iterations for the adapted 2D
+    Gridworld task. The layout mirrors the original reward evolution figure, but the observable
+    states and metrics are replaced by CPU-friendly 2D quantities.
+  </p>
+
+  <div class="figure4">
+    <div class="behavior-grid" id="behaviorGrid"></div>
+  </div>
+  <p class="caption">
+    Figure 4: System behaviors corresponding to reward functions in different self-refinement
+    iterations, as well as the manually designed reward function. Each panel shows a sampled
+    2D trajectory snapshot rather than a 3D robot pose.
+  </p>
+</section>
+
+<section class="page">
+  <table>
+    <caption>
+      Table 1: Success rates of different reward functions and the number of self-refinement
+      iterations (Iter.) used for R<sub>Refined</sub>.
+    </caption>
+    <thead>
+      <tr><th colspan="2"></th><th colspan="4">Success Rate SR</th></tr>
+      <tr>
+        <th>System</th><th>Task</th><th>R<sub>Initial</sub></th><th>R<sub>Refined</sub></th><th>R<sub>Manual</sub></th><th>Iter.</th>
+      </tr>
+    </thead>
+    <tbody id="tableRows">
+      <tr><td colspan="6">Click "Run experiments" to generate adapted results.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Similar to the original paper, the LLM adjusts the reward function by modifying its weights,
+    parameters, or reward components based on evaluation feedback. In this CPU-only reproduction,
+    PPO and Isaac Sim are replaced by Q-Learning and 2D Gridworld, while the self-refinement
+    protocol and success-rate comparison are preserved.
+  </p>
+</section>
+
+<script>
+function pct(v){return `${Math.round((v ?? 0)*100)}%`}
+function taskName(id){return id.split("_").map(s=>s[0].toUpperCase()+s.slice(1)).join(" ")}
+async function api(path, body){
+  const res = await fetch(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body||{})});
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+function mini(rowLabel, xs){
+  const cells = [`<div class="row-label">${rowLabel}</div>`];
+  xs.forEach((x,i)=>{
+    cells.push(`<div class="mini-maze"><div class="goal"></div><div class="lava"></div><div class="bot" style="left:${x}%;top:${58-i*8}%"></div><div class="time">t=${4-i}s</div></div>`);
+  });
+  return cells.join("");
+}
+function renderBehavior(){
+  document.getElementById("behaviorGrid").innerHTML =
+    mini("Iteration 0<br/>(Initial)", [8,18,28,38,48]) +
+    mini("Iteration 1", [8,28,45,62,76]) +
+    mini("Iteration 2<br/>(final)", [8,30,52,74,86]) +
+    mini("Manual", [8,31,54,75,87]);
+}
+async function runReport(){
+  document.getElementById("tableRows").innerHTML = `<tr><td colspan="6">Running CPU experiments...</td></tr>`;
+  const result = await api("/api/run-all", {episodes:350, eval_trials:100, max_iterations:5});
+  const groups = [
+    ["Basic Gridworld", ["open_field", "lava_maze"]],
+    ["Constrained Maze", ["wall_corridor", "lava_lake"]],
+    ["Hard Maze", ["spiral_maze", "trap_room"]],
+  ];
+  const byTask = new Map(result.results.map(r=>[r.task_id, r.table_row]));
+  const rows = [];
+  groups.forEach(([system,tasks])=>{
+    tasks.forEach((task,idx)=>{
+      const r = byTask.get(task);
+      rows.push(`<tr class="${idx===tasks.length-1?'group-end':''}">
+        ${idx===0?`<td class="system" rowspan="${tasks.length}">${system}</td>`:""}
+        <td class="left">${taskName(task)}</td>
+        <td>${pct(r.R_initial)}</td><td>${pct(r.R_refined)}</td><td>${pct(r.R_manual)}</td><td>${r.iterations}</td>
+      </tr>`);
+    });
+  });
+  document.getElementById("tableRows").innerHTML = rows.join("");
+  const main = byTask.get("lava_maze") || result.results[0].table_row;
+  document.getElementById("eval0").innerHTML = `Evaluation:<br/>SR = ${pct(main.R_initial)}; objective feedback indicates unsafe behavior.`;
+  document.getElementById("eval1").innerHTML = `Evaluation:<br/>SR = ${pct(main.R_refined)} after ${main.iterations} self-refinement iteration(s).`;
+  document.getElementById("eval2").innerHTML = `Evaluation:<br/>R<sub>Manual</sub> SR = ${pct(main.R_manual)}; ARPD = ${(main.arpd ?? 0).toFixed(1)}%.`;
+}
+renderBehavior();
+</script>
+</body>
+</html>

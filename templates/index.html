@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Self-Refine-RL Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="tbox" id="tbox"></div>
+<div class="spo" id="spo">
+  <div class="spo-t">OK</div>
+  <div class="spo-h">HOAN TAT</div>
+  <div class="spo-s" id="spoS"></div>
+  <button class="btn-accent" style="margin-top:6px" onclick="closeSpo()">Tiep tuc</button>
+</div>
+
+<header class="header">
+  <div class="h-brand">
+    <div class="h-mark">R</div>
+    <div class="h-title"><b>Self-Refine-RL</b> Demo</div>
+  </div>
+  <div class="h-ctrls">
+    <select id="selTask" title="Challenge task"></select>
+    <input type="text" id="inpTask" value="Find a short path to the goal, avoid lava, avoid walls"/>
+    <button class="btn-accent" id="btnRun" onclick="go()">Chay thuc nghiem</button>
+    <button class="btn-ghost" id="btnRunAll" onclick="runAll()">Chay bang Table 1</button>
+    <button class="btn-ghost" id="btnP" onclick="togP()" disabled>Tam dung</button>
+    <button class="btn-ghost" onclick="rst()">Reset</button>
+  </div>
+</header>
+
+<main class="main">
+  <section class="pnl pnl--maze">
+    <div class="pnl-h"><span>2D Gridworld</span><span class="pnl-tag" id="mzTag" style="background:var(--border);color:var(--text3)">Ready</span></div>
+    <div class="pnl-b">
+      <div class="mz-vp" id="mzVP"><canvas id="mazeCanvas" width="320" height="320"></canvas></div>
+      <div class="mz-leg">
+        <span><i class="lw"></i>Wall</span><span><i class="lp"></i>Path</span><span><i class="ll"></i>Lava</span><span><i class="lg"></i>Goal</span><span><i class="lb"></i>Bot</span>
+      </div>
+      <div class="mz-meta">
+        <div>Step: <b id="sSt">0/0</b></div><div>Collisions: <b id="sCo">0</b></div>
+        <div>Optimal: <b id="sOp">-</b></div><div>Bot: <b id="sBo">Idle</b></div>
+      </div>
+      <div class="mz-btns">
+        <button class="btn-ghost btn-sm" onclick="reMz()">Ve lai maze</button>
+        <button class="btn-ghost btn-sm" id="btnSp" onclick="cySp()">1x</button>
+      </div>
+      <div class="rot-control">
+        <span>Goc nhin</span>
+        <input type="range" id="rotSlider" min="-180" max="180" value="0" step="1">
+        <b id="rotVal">0 deg</b>
+      </div>
+    </div>
+  </section>
+
+  <section class="pnl pnl--code">
+    <div class="pnl-h"><span>Reward Function</span><span class="pnl-tag" id="cdTag" style="background:var(--border);color:var(--text3)">current_reward.py</span></div>
+    <div class="pnl-b" style="padding:0;gap:0">
+      <div class="c-diff"><span><span class="dot r"></span> Removed</span><span><span class="dot g"></span> Added</span><span class="c-ver" id="cdVer">No run yet</span></div>
+      <div class="c-wrap" id="cWrap"></div>
+    </div>
+  </section>
+
+  <section class="pnl pnl--info">
+    <div class="pnl-h"><span>Evaluation</span><span class="pnl-tag" id="inTag" style="background:var(--border);color:var(--text3)">Status</span></div>
+    <div class="pnl-b">
+      <div class="ic">
+        <div class="ic-t">Trang thai</div>
+        <span class="sp si" id="sPill"><span class="d"></span>San sang</span>
+        <div class="pbar"><div class="pfill" id="pFill" style="width:0;background:var(--text3)"></div></div>
+      </div>
+      <div class="ic">
+        <div class="ic-t">Metrics</div>
+        <div class="mr"><span class="l">Thoi gian</span><span class="v" id="mTi">0:00</span></div>
+        <div class="mr"><span class="l">Iteration</span><span class="v" id="mIt">0 / 5</span></div>
+        <div class="mr"><span class="l">Success Rate</span><span class="v" id="mWi">0%</span></div>
+        <div class="mr"><span class="l">Avg Steps</span><span class="v" id="mAv">-</span></div>
+        <div class="mr"><span class="l">ARPD</span><span class="v" id="mAr">-</span></div>
+      </div>
+      <div class="ic" style="flex:1;display:flex;flex-direction:column">
+        <div class="ic-t">Log</div>
+        <div class="lbox" id="lBox"></div>
+      </div>
+      <div class="ic">
+        <div class="ic-t">Table 1 style</div>
+        <div class="mr"><span class="l">R_initial</span><span class="v" id="tInit">-</span></div>
+        <div class="mr"><span class="l">R_refined</span><span class="v" id="tRef">-</span></div>
+        <div class="mr"><span class="l">R_manual</span><span class="v" id="tMan">-</span></div>
+        <div class="mr"><span class="l">Iter.</span><span class="v" id="tIter">-</span></div>
+      </div>
+      <div class="ic table-card">
+        <div class="ic-t">All Tasks</div>
+        <div class="exp-table-wrap">
+          <table class="exp-table">
+            <thead>
+              <tr><th>Task</th><th>Init</th><th>Refined</th><th>Manual</th><th>Iter</th></tr>
+            </thead>
+            <tbody id="expRows">
+              <tr><td colspan="5">Run Table 1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section class="tl-s">
+  <div class="tl-w">
+    <div class="tl-h"><span>Self-Refinement History</span><button class="btn-ghost btn-sm" onclick="scrTL()">Len dau</button></div>
+    <div class="tl-b" id="tlB"></div>
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
