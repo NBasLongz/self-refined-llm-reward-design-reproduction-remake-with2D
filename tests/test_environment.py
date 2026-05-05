@@ -14,6 +14,7 @@ def test_wall_keeps_agent_in_place():
     result = env.step(1)
     assert result.info["hit_wall"] is True
     assert result.observation["position"] == (0, 0)
+    
 
 
 def test_lava_terminates_episode():
