@@ -1,7 +1,7 @@
 # Self-Refined RL Reward Designer (CPU-Only)
 
 Reproduction-oriented project for:
-**Song et al. (2023) - Self-Refined LLM as Automated Reward Function Designer**.
+**Song et al. (2023) - Self-Refined LLM as Automated Reward Function Designer**. 
 
 This implementation keeps the core loop:
 
