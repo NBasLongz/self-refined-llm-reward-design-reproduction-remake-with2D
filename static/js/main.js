@@ -510,6 +510,7 @@ function drawGoalTile(cx0, cy0, tileW, tileH, c) {
   cx.restore();
 }
 
+
 function drawPrism(cx0, cy0, tileW, tileH, h, top, left, right, stroke) {
   const topY = cy0 - h;
   cx.beginPath();
